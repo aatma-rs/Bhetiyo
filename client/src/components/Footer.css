@@ -1,0 +1,41 @@
+footer{
+    text-align: center;
+    align-items: center;
+    background-color: #AFBDB0;
+    height: 100%;
+    width: 100%;
+    color: white;
+    position: relative;
+
+}
+footer .footer-image{
+    position: absolute;
+    left: 40%;
+    top: 10%;
+}
+footer .footer-image img{
+    height: 150px;
+    width: 150px;
+}
+footer .footer-list{
+    position: absolute;
+    left: 50%;
+    top: 25%;
+    text-decoration: none;
+    list-style: none;
+}
+footer .footer-list ul li{
+    list-style: none;
+    margin-bottom: 5px;
+    font-size: large;
+}
+footer .footer-list ul li a{
+    text-decoration: none;
+    color: white;
+    font-weight: bold;
+}
+footer .footer-text{
+    font-weight: bold;
+    padding-top: 170px;
+    padding-bottom: 20px;
+}
