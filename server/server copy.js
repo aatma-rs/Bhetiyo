@@ -17,7 +17,7 @@ app.use(cors());
 app.use(express.json());
 
 mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/bhetiyo', {})
-  .then(() => console.log('Connected to MongoDB'))
+  .then(() => console.log('Connected to MongoDB!!'))
   .catch(err => console.error('MongoDB connection error:', err));
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-here';
