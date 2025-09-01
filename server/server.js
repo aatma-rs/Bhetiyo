@@ -92,7 +92,7 @@ const synonymMap = {
   'glasses': ['spectacles', 'chasma'], 'spectacles': ['glasses', 'chasma'], 'chasma': ['glasses', 'spectacles'],
   'bag': 'backpack', 'backpack': 'bag',
   'watch': 'ghadi', 'ghadi': 'watch',
-  'earrings': 'jewellery', 'jewellery': 'earrings',
+  'earrings': 'jewelry', 'jewelry': 'earrings',
   'book': 'textbook', 'textbook': 'book',
   'card': 'id', 'id': 'card',
   'tablet': 'ipad', 'ipad': 'tablet',
