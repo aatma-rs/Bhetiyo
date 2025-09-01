@@ -43,16 +43,23 @@ h2{
     margin-top: 5px;
     border: 1px solid #706d6d;
     border-radius: 8px;
-    width: 100%;
-    padding: 0 8px;
+    padding: 5px;
 }
-.btn{
-    background:  #B4CCCE;
-    height: 30px;
-    border: none ;
+.form-box form .btn{
+    height: 35px;
+    background: #468c81;
+    border: 0;
     border-radius: 8px;
+    color: #fff;
     font-size: 15px;
     cursor: pointer;
-    width: 105%;
+    transition: all .3s ease-in-out;
+    margin-top: 10px;
+    padding: 5px;
+}
+.form-box form .links{
+    display: flex;
+    justify-content: center;
     align-items: center;
+    margin-top: 15px;
 }

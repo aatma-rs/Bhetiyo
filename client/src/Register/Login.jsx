@@ -38,14 +38,15 @@ function Login() {
     container: {
       padding: '40px 20px',
       maxWidth: '400px',
-      margin: '0 auto',
+      margin: '40px auto',
       backgroundColor: '#f9f9f9',
       borderRadius: '8px',
-      boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
+      boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+      fontFamily: 'Arial, sans-serif'
     },
     title: {
       textAlign: 'center',
-      marginBottom: '30px',
+      marginBottom: '20px',
       color: '#333'
     },
     form: {
@@ -55,19 +56,22 @@ function Login() {
     },
     input: {
       padding: '12px',
-      border: '1px solid #ddd',
+      fontSize: '16px',
       borderRadius: '4px',
-      fontSize: '16px'
+      border: '1px solid #ccc',
+      width: '100%',
+      boxSizing: 'border-box'
     },
     button: {
-      padding: '12px',
-      backgroundColor: '#007bff',
-      color: 'white',
+      padding: '12px 20px',
+      fontSize: '16px',
+      fontWeight: 'bold',
+      color: '#fff',
+      backgroundColor: '#000000ff',
       border: 'none',
       borderRadius: '4px',
-      fontSize: '16px',
       cursor: 'pointer',
-      disabled: loading
+      transition: 'background-color 0.2s ease',
     },
     message: {
       textAlign: 'center',
@@ -89,7 +93,7 @@ function Login() {
         <div style={{
           ...styles.message,
           backgroundColor: message.includes('successful') ? '#d4edda' : '#f8d7da',
-          color: message.includes('successful') ? '#155724' : '#721c24'
+          color: message.includes('successful') ? '#3f892cff' : '#b9313fff'
         }}>
           {message}
         </div>
@@ -119,7 +123,7 @@ function Login() {
           style={styles.button}
           disabled={loading}
         >
-          {loading ? 'Logging in...' : 'Login'}
+          {loading ? 'Logging In...' : 'Login'}
         </button>
       </form>
 

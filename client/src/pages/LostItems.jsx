@@ -1,66 +1,47 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import Card from '../Card';
 
 function LostItems() {
-  const [items, setItems] = useState([]);
+  const [lostReports, setLostReports] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchLostItems = async () => {
+    const fetchLostReports = async () => {
       try {
-        const res = await axios.get('/api/reports/lost');
-        setItems(res.data);
+        const response = await axios.get('http://localhost:5000/api/public/reports/lost');
+        setLostReports(response.data);
       } catch (err) {
-        console.error('Error loading lost items:', err);
+        setError('Failed to fetch lost reports.');
       } finally {
         setLoading(false);
       }
     };
-
-    fetchLostItems();
+    fetchLostReports();
   }, []);
 
-  const styles = {
-    container: {
-      padding: '40px 20px',
-      maxWidth: '900px',
-      margin: '0 auto',
-    },
-    title: {
-      marginBottom: '20px',
-      color: '#007bff',
-    },
-    card: {
-      border: '1px solid #ccc',
-      borderRadius: '8px',
-      padding: '20px',
-      marginBottom: '15px',
-      backgroundColor: '#f9f9f9',
-      boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
-    },
-    label: {
-      fontWeight: 'bold',
-    }
-  };
+  if (loading) {
+    return <div className="container">Loading lost items...</div>;
+  }
+
+  if (error) {
+    return <div className="container error-message">{error}</div>;
+  }
 
   return (
-    <div style={styles.container}>
-      <h2 style={styles.title}>Lost Items</h2>
-
-      {loading ? (
-        <p>Loading lost items...</p>
-      ) : items.length === 0 ? (
-        <p>No lost items reported.</p>
+    <div className="container">
+      <h1>Lost Items</h1>
+      {lostReports.length === 0 ? (
+        <p>No lost items have been reported yet.</p>
       ) : (
-        items.map(item => (
-          <div key={item._id} style={styles.card}>
-            <h3>{item.itemName}</h3>
-            <p><span style={styles.label}>Location:</span> {item.location}</p>
-            <p><span style={styles.label}>Description:</span> {item.description}</p>
-            <p><span style={styles.label}>Contact:</span> {item.contact}</p>
-            <p><span style={styles.label}>Date:</span> {new Date(item.date).toLocaleDateString()}</p>
+        <div className="cards-container">
+          <div className="cards-grid">
+            {lostReports.map((report) => (
+              <Card key={report._id} report={report} />
+            ))}
           </div>
-        ))
+        </div>
       )}
     </div>
   );

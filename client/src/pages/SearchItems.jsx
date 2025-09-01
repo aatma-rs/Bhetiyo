@@ -1,7 +1,7 @@
-// src/pages/SearchItems.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import Card from '../Card';
 
 function SearchItems() {
   const [searchQuery, setSearchQuery] = useState({
@@ -10,8 +10,8 @@ function SearchItems() {
   const [results, setResults] = useState([]);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
-  const [claimMessage, setClaimMessage] = useState({}); // To manage messages per claim
-  const [currentUserId, setCurrentUserId] = useState(null); // State to store current user's ID
+  const [claimMessage, setClaimMessage] = useState({});
+  const [currentUserId, setCurrentUserId] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -21,15 +21,13 @@ function SearchItems() {
       return;
     }
 
-    // Decode token to get user ID
     try {
-      const decodedToken = JSON.parse(atob(token.split('.')[1])); // Basic decoding for client-side
+      const decodedToken = JSON.parse(atob(token.split('.')[1]));
       setCurrentUserId(decodedToken.userId);
     } catch (e) {
       console.error("Error decoding token:", e);
       navigate('/login');
     }
-
   }, [navigate]);
 
   function handleChange(e) {
@@ -41,155 +39,178 @@ function SearchItems() {
     setLoading(true);
     setMessage('');
     setResults([]);
-    setClaimMessage({}); // Clear claim messages on new search
 
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post('http://localhost:5000/api/search', {
-        searchDescription: searchQuery.description,
-      }, {
+      const response = await axios.get(`http://localhost:5000/api/search?query=${encodeURIComponent(searchQuery.description)}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      setResults(response.data);
       if (response.data.length === 0) {
         setMessage('No matching items found.');
-      } else {
-        setMessage(`Found ${response.data.length} potential matches.`);
       }
+      setResults(response.data);
     } catch (err) {
-      if (err.response?.status === 401) {
-        setMessage('Please log in to perform a search.');
-        setTimeout(() => navigate('/login'), 2000);
-      } else {
-        setMessage(err.response?.data?.error || 'Failed to perform search.');
-      }
+      const errorMsg = err.response?.data?.error || 'Failed to perform search. Please try again.';
+      setMessage(errorMsg);
       console.error(err);
     } finally {
       setLoading(false);
     }
   }
 
-  const handleClaim = async (reportId) => {
-    setClaimMessage(prev => ({ ...prev, [reportId]: { text: 'Submitting claim...', type: 'info' } }));
+  const handleClaim = async (foundReportId, score) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setClaimMessage(prev => ({ ...prev, [foundReportId]: { text: 'You must be logged in to claim an item.', type: 'error' } }));
+      return;
+    }
+
+    setClaimMessage(prev => ({ ...prev, [foundReportId]: { text: 'Claiming...', type: 'info' } }));
+
     try {
-      const token = localStorage.getItem('token');
-      await axios.post(`http://localhost:5000/api/reports/${reportId}/claim`, {}, {
+      const response = await axios.post(`http://localhost:5000/api/reports/${foundReportId}/claim`, { claimScore: score }, { // Sending score in the body
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
-      setClaimMessage(prev => ({ ...prev, [reportId]: { text: 'Claim request submitted successfully! Await for admin approval.', type: 'success' } }));
-      // Optionally, update the claimStatus of the item in the UI
-      setResults(prevResults => 
-        prevResults.map(result => 
-          result.report._id === reportId 
-            ? { ...result, report: { ...result.report, claimStatus: 'pending' } } 
+
+      setClaimMessage(prev => ({ ...prev, [foundReportId]: { text: 'Claim submitted successfully! Wait for Admin Approval or contact Admin: +977-9841234567', type: 'success' } }));
+
+      setResults(prevResults =>
+        prevResults.map(result =>
+          result.report._id === foundReportId
+            ? { ...result, report: { ...result.report, claimStatus: 'pending', claimBy: currentUserId } }
             : result
         )
       );
     } catch (err) {
-      setClaimMessage(prev => ({ ...prev, [reportId]: { text: err.response?.data?.error || 'Failed to submit claim.', type: 'error' } }));
-      console.error("Claim error:", err);
+      const errorText = err.response?.data?.error || 'Failed to submit claim. Please try again.';
+      setClaimMessage(prev => ({ ...prev, [foundReportId]: { text: errorText, type: 'error' } }));
+      console.error("Error submitting claim:", err);
     }
   };
-
 
   const styles = {
     container: {
       padding: '40px 20px',
-      maxWidth: '800px',
+      maxWidth: '900px',
       margin: '0 auto',
-      backgroundColor: '#f9f9f9',
-      borderRadius: '8px',
-      boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
+      fontFamily: 'Arial, sans-serif'
     },
     title: {
       textAlign: 'center',
-      marginBottom: '30px',
-      color: '#333'
+      marginBottom: '20px',
+      color: '#252525ff'
     },
     form: {
       display: 'flex',
-      flexDirection: 'column',
-      gap: '15px',
+      gap: '10px',
       marginBottom: '30px'
     },
-    textarea: {
-      padding: '12px',
-      border: '1px solid #ddd',
-      borderRadius: '4px',
+    input: {
+      flexGrow: 1,
+      padding: '20px',
       fontSize: '16px',
-      minHeight: '80px',
-      resize: 'vertical'
+      borderRadius: '4px',
+      border: '1px solid #ccc'
     },
     button: {
-      padding: '12px',
-      backgroundColor: '#007bff',
-      color: 'white',
+      padding: '10px 40px',
+      fontSize: '20px',
+      fontWeight: 'bold',
+      color: '#fff',
+      backgroundColor: '#252525ff',
       border: 'none',
       borderRadius: '4px',
-      fontSize: '16px',
       cursor: 'pointer'
     },
     message: {
+      padding: '15px',
+      borderRadius: '8px',
+      backgroundColor: '#f8d7da',
+      color: '#721c24',
       textAlign: 'center',
-      padding: '10px',
-      borderRadius: '4px',
-      marginBottom: '15px'
+      border: '1px solid #f5c6cb'
     },
-    resultList: {
+    list: {
       listStyleType: 'none',
       padding: 0
     },
-    resultItem: {
-      backgroundColor: '#fff',
-      border: '1px solid #ddd',
-      borderRadius: '4px',
-      padding: '15px',
-      marginBottom: '10px',
+    card: {
+      border: '1px solid #ccc',
+      borderRadius: '8px',
+      padding: '20px',
+      marginBottom: '15px',
+      backgroundColor: '#f9f9f9',
+      boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
       display: 'flex',
-      flexDirection: 'column',
-      gap: '5px'
+      gap: '20px'
     },
-    strong: {
-      fontWeight: 'bold'
+    imageContainer: {
+      minWidth: '300px',
+      minHeight: '300px',
+      maxWidth: '300px',
+      maxHeight: '300px',
+      marginBottom: '15px',
+      borderRadius: '8px',
+      overflow: 'hidden',
+      backgroundColor: '#f0f0f0',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
     },
-    reportType: {
-      fontSize: '0.9em',
+    image: {
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover',
+    },
+    noImageText: {
+      color: '#888',
+      fontSize: '14px',
       fontStyle: 'italic',
-      color: '#555'
     },
+    reportTypeBadge: (type) => ({
+      backgroundColor: type === 'lost' ? '#b9313fff' : '#3f892cff',
+      color: '#fff',
+      padding: '4px 8px',
+      borderRadius: '12px',
+      fontSize: '12px',
+      fontWeight: '600',
+      textTransform: 'uppercase'
+    }),
     claimButton: {
-      backgroundColor: '#28a745', // Green for claim
+      backgroundColor: '#3f892cff',
       color: 'white',
       border: 'none',
-      padding: '8px 12px',
-      borderRadius: '4px',
+      padding: '10px 20px',
+      borderRadius: '5px',
       cursor: 'pointer',
       marginTop: '10px',
-      alignSelf: 'flex-start'
+      fontSize: '16px'
     },
     claimedButton: {
-      backgroundColor: '#6c757d', // Grey for claimed
-      color: 'white',
+      backgroundColor: '#ffd900ff',
+      color: 'black',
       border: 'none',
-      padding: '8px 12px',
-      borderRadius: '4px',
+      padding: '10px 20px',
+      borderRadius: '5px',
       cursor: 'not-allowed',
       marginTop: '10px',
-      alignSelf: 'flex-start'
+      fontSize: '16px'
     },
     claimMessage: {
-      fontSize: '0.9em',
-      marginTop: '5px',
-      padding: '5px',
-      borderRadius: '3px'
+      padding: '10px',
+      border: 'none',
+      borderRadius: '5px',
+      marginTop: '10px',
+      textAlign: 'center',
+      fontSize: '14px'
     },
     infoMessage: {
-      backgroundColor: '#e2e3e5',
-      color: '#383d41'
+      backgroundColor: '#e9ecef',
+      color: '#495057'
     },
     successMessage: {
       backgroundColor: '#d4edda',
@@ -199,94 +220,96 @@ function SearchItems() {
       backgroundColor: '#f8d7da',
       color: '#721c24'
     },
-    postedByMessage: {
-      fontSize: '0.9em',
-      marginTop: '5px',
-      padding: '5px',
-      borderRadius: '3px',
-      backgroundColor: '#e0f7fa',
-      color: '#00796b',
-      alignSelf: 'flex-start'
+    pgph: {
+      marginBottom: '10px'
     }
   };
 
   return (
     <div style={styles.container}>
       <h2 style={styles.title}>Search for Lost or Found Items</h2>
-      
-      {message && (
-        <div style={{
-          ...styles.message,
-          backgroundColor: message.includes('No matching') || message.includes('Failed') ? '#f8d7da' : '#d4edda',
-          color: message.includes('No matching') || message.includes('Failed') ? '#721c24' : '#155724'
-        }}>
-          {message}
-        </div>
-      )}
-
       <form onSubmit={handleSubmit} style={styles.form}>
-        <textarea
+        <input
           name="description"
-          placeholder="Enter description of the item you are looking for (e.g., 'red leather wallet with a broken zipper')"
+          type="text"
+          placeholder="Enter keywords (e.g., 'wallet', 'keys')"
           value={searchQuery.description}
           onChange={handleChange}
-          style={styles.textarea}
+          style={styles.input}
           required
         />
-        <button 
-          type="submit" 
-          style={styles.button}
-          disabled={loading}
-        >
-          {loading ? 'Searching...' : 'Search Items'}
+        <button type="submit" style={styles.button} disabled={loading}>
+          {loading ? 'Searching...' : 'Search'}
         </button>
       </form>
 
+      {message && <div style={styles.message}>{message}</div>}
+
       {results.length > 0 && (
-        <ul style={styles.resultList}>
-          {results.map((result) => (
-            <li key={result.report._id} style={styles.resultItem}>
-              <div><span style={styles.strong}>Item Name:</span> {result.report.itemName}</div>
-              <div><span style={styles.strong}>Report Type:</span> <span style={styles.reportType}>{result.report.reportType}</span></div>
-              <div><span style={styles.strong}>Similarity:</span> {(result.similarity * 100).toFixed(2)}%</div>
-              <div><span style={styles.strong}>Description:</span> {result.report.description}</div>
-              <div><span style={styles.strong}>Location:</span> {result.report.location}</div>
-              <div><span style={styles.strong}>Date:</span> {new Date(result.report.date).toLocaleDateString()}</div>
-              <div><span style={styles.strong}>Contact:</span> {result.report.contact}</div>
+        <ul style={styles.list}>
+          {results.map(result => (
+            <li key={result.report._id} style={styles.card}>
+              <div style={styles.imageContainer}>
+                {result.report.image ? (
+                  <img
+                    src={`http://localhost:5000/uploads/${result.report.image}`}
+                    alt={result.report.itemName}
+                    style={styles.image}
+                  />
+                ) : (
+                  <div style={styles.noImageText}>No image available</div>
+                )}
+              </div>
 
-              {/* Show claim button ONLY for 'found' items in search results AND if not posted by current user */}
-              {result.report.reportType === 'found' && result.report.postedBy === currentUserId ? (
-                <div style={styles.postedByMessage}>You posted this item.</div>
-              ) : (
-                result.report.reportType === 'found' && result.report.claimStatus === 'none' && (
-                  <button 
-                    style={styles.claimButton}
-                    onClick={() => handleClaim(result.report._id)}
-                    disabled={claimMessage[result.report._id]?.type === 'info'}
-                  >
-                    Claim This Item
-                  </button>
-                )
-              )}
-              {result.report.reportType === 'found' && result.report.claimStatus !== 'none' && result.report.postedBy !== currentUserId && (
-                <button 
-                  style={styles.claimedButton}
-                  disabled
-                >
-                  {result.report.claimStatus === 'pending' ? 'Claim Pending' : 'Claim Approved'}
-                </button>
-              )}
-
-              {claimMessage[result.report._id] && (
-                <div style={{
-                  ...styles.claimMessage,
-                  ...(claimMessage[result.report._id].type === 'info' && styles.infoMessage),
-                  ...(claimMessage[result.report._id].type === 'success' && styles.successMessage),
-                  ...(claimMessage[result.report._id].type === 'error' && styles.errorMessage)
-                }}>
-                  {claimMessage[result.report._id].text}
+              <div className="descriptionContainer">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', width: '500px' }}>
+                  <h3 style={{marginLeft: '4px'}}>{result.report.itemName}</h3>
+                  <span style={styles.reportTypeBadge(result.report.reportType)}>
+                    {result.report.reportType}
+                  </span>
                 </div>
-              )}
+                <p style={styles.pgph}><strong>Similarity Score:</strong><b> {isFinite(result.matchScore) ? `${result.matchScore.toFixed(2)}%` : '0.00%'}</b></p>
+                <p style={styles.pgph}><strong>Location:</strong> {result.report.location}</p>
+                <p style={styles.pgph}><strong>Date:</strong> {new Date(result.report.date).toLocaleDateString()}</p>
+                <p style={styles.pgph}><strong>Description:</strong> {result.report.description}</p>
+                <p style={styles.pgph}><strong>Contact:</strong> {result.report.contact}</p>
+
+                {result.report.postedBy === currentUserId ? (
+                  <div style={{ ...styles.claimMessage, ...styles.infoMessage }}>
+                    You posted this item.
+                  </div>
+                ) : (
+                  result.report.reportType === 'found' && result.report.claimStatus === 'none' && (
+                    <button
+                      style={styles.claimButton}
+                      onClick={() => handleClaim(result.report._id, result.matchScore)}
+                      disabled={claimMessage[result.report._id]?.type === 'info'}
+                    >
+                      Claim This Item
+                    </button>
+                  )
+                )}
+                {result.report.reportType === 'found' && result.report.claimStatus !== 'none' && result.report.postedBy !== currentUserId && (
+                  <button
+                    style={styles.claimedButton}
+                    disabled
+                  >
+                    {result.report.claimStatus === 'pending' ? 'Claim Pending' : 'Claim Approved'}
+                  </button>
+                )}
+
+                {claimMessage[result.report._id] && (
+                  <div style={{
+                    ...styles.claimMessage,
+                    ...(claimMessage[result.report._id].type === 'info' && styles.infoMessage),
+                    ...(claimMessage[result.report._id].type === 'success' && styles.successMessage),
+                    ...(claimMessage[result.report._id].type === 'error' && styles.errorMessage)
+                  }}>
+                    {claimMessage[result.report._id].text}
+                  </div>
+                  )}
+              </div>
+
             </li>
           ))}
         </ul>

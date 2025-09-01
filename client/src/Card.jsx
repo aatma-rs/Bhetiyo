@@ -1,184 +1,148 @@
 import React, { useState, useEffect } from 'react';
-import defaultImage from "../src/assets/walletdemo.webp";
+import axios from 'axios';
+import { Link } from 'react-router-dom';
+import './Card.css';
+import { jwtDecode } from 'jwt-decode';
 
-function Card({ report, onClaim }) {
-  const handleClaim = () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      alert('Please login to claim items');
-      return;
+function getUserIdFromToken() {
+  const token = localStorage.getItem('token');
+  if (token) {
+    try {
+      const decodedToken = jwtDecode(token);
+      return decodedToken.userId;
+    } catch (error) {
+      console.error('Failed to decode token:', error);
+      return null;
     }
-    onClaim(report._id);
-  };
-
-  const getStatusBadge = (status) => {
-    const badgeStyles = {
-      none: { backgroundColor: '#6c757d', color: '#fff' },
-      pending: { backgroundColor: '#ffc107', color: '#000' },
-      approved: { backgroundColor: '#28a745', color: '#fff' }
-    };
-
-    return (
-      <span 
-        className="status-badge"
-        style={{
-          ...badgeStyles[status] || badgeStyles.none,
-          padding: '4px 8px',
-          borderRadius: '12px',
-          fontSize: '12px',
-          fontWeight: '600',
-          textTransform: 'uppercase'
-        }}
-      >
-        {status === 'none' ? 'Available' : status}
-      </span>
-    );
-  };
-
-  const getTypeStyle = (type) => ({
-    backgroundColor: type === 'lost' ? '#ffc107' : '#17a2b8',
-    color: '#fff',
-    padding: '4px 8px',
-    borderRadius: '12px',
-    fontSize: '12px',
-    fontWeight: '600',
-    textTransform: 'uppercase'
-  });
-
-  return (
-    <div className="card">
-      {/* <img 
-        src={report.imageUrl || defaultImage} 
-        alt={`${report.itemName} Picture`} 
-        className="cardPicture" 
-      /> */}
-      <div className="card-header">
-        <h2 className="cardTitle">{report.itemName}</h2>
-        <div className="card-badges">
-          <span style={getTypeStyle(report.reportType)}>
-            {report.reportType}
-          </span>
-          {getStatusBadge(report.claimStatus)}
-        </div>
-      </div>
-      
-      <div className="card-info">
-        <p className="card-location">
-          <strong>Location:</strong> {report.location}
-        </p>
-        <p className="card-date">
-          <strong>Date:</strong> {new Date(report.date).toLocaleDateString()}
-        </p>
-        <p className="card-contact">
-          <strong>Contact:</strong> {report.contact}
-        </p>
-        <p className="card-posted-by">
-          <strong>Posted by:</strong> {report.postedBy?.name || report.userName || 'Anonymous'}
-        </p>
-      </div>
-      
-      <p className="cardDescription">{report.description}</p>
-      
-      {report.reportType === 'found' && report.claimStatus === 'none' && (
-        <button 
-          className="claim-button"
-          onClick={handleClaim}
-          style={{
-            backgroundColor: '#dc3545',
-            color: '#fff',
-            border: 'none',
-            padding: '8px 16px',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontWeight: '500',
-            marginTop: '10px',
-            width: '100%'
-          }}
-        >
-          Claim This Item
-        </button>
-      )}
-    </div>
-  );
+  }
+  return null;
 }
 
+function Card({ report }) {
+  const [claimMessage, setClaimMessage] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const loggedInUserId = getUserIdFromToken();
 
-function CardsContainer({ reportType = 'all' }) {
-  const [reports, setReports] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const handleClaim = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setClaimMessage('Please login to claim items');
+      return;
+    }
 
-  useEffect(() => {
-    fetchReports();
-  }, [reportType]);
+    setLoading(true);
+    setClaimMessage('Submitting claim...');
 
-  const fetchReports = async () => {
     try {
-      setLoading(true);
-      let url;
+      await axios.post(
+        `http://localhost:5000/api/reports/${report._id}/claim`,
+        { claimScore: 0 },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       
-      switch (reportType) {
-        case 'lost':
-          url = 'http://localhost:5000/api/reports/lost';
-          break;
-        case 'found':
-          url = 'http://localhost:5000/api/reports/found';
-          break;
-        default:
-
-          const [lostResponse, foundResponse] = await Promise.all([
-            fetch('http://localhost:5000/api/reports/lost'),
-            fetch('http://localhost:5000/api/reports/found')
-          ]);
-          
-          if (!lostResponse.ok || !foundResponse.ok) {
-            throw new Error('Failed to fetch reports');
-          }
-          
-          const lostData = await lostResponse.json();
-          const foundData = await foundResponse.json();
-          const combinedData = [...lostData, ...foundData]
-            .sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
-          
-          setReports(combinedData);
-          setLoading(false);
-          return;
-      }
-
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error('Failed to fetch reports');
-      }
-
-      const data = await response.json();
-      setReports(data.sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date)));
+      setClaimMessage('Claim submitted successfully! Wait for Admin Approval or contact Admin: +977-9841234567');
     } catch (err) {
-      setError(err.message);
+      setClaimMessage(err.response?.data?.error || 'Failed to submit claim.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleClaim = async (reportId) => {
+  const imageUrl = report.image
+    ? `http://localhost:5000/uploads/${report.image}`
+    : 'https://via.placeholder.com/150';
+
+  const shouldShowClaimButton = 
+    report.reportType === 'found' && 
+    loggedInUserId && 
+    report.postedBy?._id !== loggedInUserId &&
+    report.claimStatus === 'none';
+
+  const showPostedByYou =
+    report.reportType === 'found' &&
+    loggedInUserId &&
+    report.postedBy?._id == loggedInUserId;
+
+  const showLostPostedByYou =
+    report.reportType === 'lost' &&
+    loggedInUserId &&
+    report.postedBy?._id == loggedInUserId;
+
+  return (
+    <div className="card">
+      <img src={imageUrl} alt={report.itemName} className="card-image" />
+      <div className="card-body">
+        <h3 className="card-title">{report.itemName}</h3>
+        <p>
+          <span className="report-label">Report Type:</span>
+          <span className={`badge ${report.reportType === 'lost' ? 'badge-lost' : 'badge-found'}`}>
+            {report.reportType}
+          </span>
+        </p>
+        <p><strong>Location:</strong> {report.location}</p>
+        <p><strong>Date:</strong> {new Date(report.date).toLocaleDateString()}</p>
+        <p><strong>Posted by:</strong> {report.userName}</p>
+        <p><strong>Description:</strong> {report.description}</p>
+        <p style={{ marginBottom: '20px'}}>
+          <span className="report-label">Status:</span>
+            <span className={`badge badge-status-${report.claimStatus}`}>
+              {report.reportType === 'lost'
+                ? report.claimStatus === 'not-found-yet'
+                  ? 'Not Found Yet'
+                  : 'Has Been Found'
+                : report.claimStatus}
+            </span>
+        </p>
+        
+        {shouldShowClaimButton && (
+          <button className="btn btn-primary" onClick={handleClaim} disabled={loading}>
+            {loading ? 'Submitting...' : 'Claim This Item'}
+          </button>
+        )}
+
+        {showPostedByYou && (
+          <p style={{ color: 'green', fontWeight: 'bold', marginTop: 'auto', marginBottom: '30px'}}>
+            You Posted This as Found
+          </p>
+        )}
+
+        {showLostPostedByYou && (
+          <p style={{ color: 'red', fontWeight: 'bold', marginTop: 'auto', marginBottom: '30px'}}>
+            You Posted This as Lost
+          </p>
+        )}
+
+        {claimMessage && (
+          <div className="claim-message" style={{ color: claimMessage.includes('successfully') ? 'green' : 'red', marginBottom: '20px' }}>
+            {claimMessage}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function CardsContainer() {
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchReports();
+  }, []);
+
+  const fetchReports = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/reports/${reportId}/claim`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to claim item');
-      }
-
-      alert('Claim request submitted successfully!');
-      fetchReports();
+      const response = await axios.get('http://localhost:5000/api/public/reports/all');
+      setReports(response.data);
     } catch (err) {
-      alert('Error claiming item: ' + err.message);
+      setError('Failed to fetch reports. Please check your server.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -193,8 +157,8 @@ function CardsContainer({ reportType = 'all' }) {
   if (error) {
     return (
       <div className="cards-container">
-        <p style={{ color: '#dc3545' }}>Error: {error}</p>
-        <button onClick={fetchReports} style={{ marginTop: '10px' }}>
+        <p className="error-message">Error: {error}</p>
+        <button onClick={fetchReports} className="retry-button">
           Try Again
         </button>
       </div>
@@ -205,16 +169,12 @@ function CardsContainer({ reportType = 'all' }) {
     <div className="cards-container">
       {reports.length === 0 ? (
         <div className="no-reports">
-          <p>No {reportType === 'all' ? '' : reportType} reports found.</p>
+          <p>No reports found.</p>
         </div>
       ) : (
         <div className="cards-grid">
-          {reports.map(report => (
-            <Card 
-              key={report._id} 
-              report={report} 
-              onClaim={handleClaim}
-            />
+          {reports.map((report) => (
+            <Card key={report._id} report={report} />
           ))}
         </div>
       )}
@@ -222,5 +182,4 @@ function CardsContainer({ reportType = 'all' }) {
   );
 }
 
-export { Card, CardsContainer };
-export default CardsContainer;
+export default Card;

@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 function AdminReports() {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('all');
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchReports();
@@ -13,21 +16,24 @@ function AdminReports() {
   const fetchReports = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/admin/reports', {
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+      const response = await axios.get('http://localhost:5000/api/admin/reports', {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Authorization': `Bearer ${token}`
         }
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch reports');
-      }
-
-      const data = await response.json();
-      setReports(data);
+      setReports(response.data);
+      setError('');
     } catch (err) {
-      setError(err.message);
+      console.error('Failed to fetch reports:', err.response?.data?.error || err.message);
+      if (err.response?.status === 403) {
+        setError('Access Denied: You must be an admin to view this page.');
+      } else {
+        setError('Failed to fetch reports. Please check your network or server status.');
+      }
     } finally {
       setLoading(false);
     }
@@ -36,320 +42,197 @@ function AdminReports() {
   const updateClaimStatus = async (reportId, newStatus) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/admin/reports/${reportId}/claim-status`, {
-        method: 'PUT',
+      await axios.put(`http://localhost:5000/api/admin/reports/${reportId}/claim-status`, { claimStatus: newStatus }, {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ claimStatus: newStatus })
+          'Authorization': `Bearer ${token}`
+        }
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to update claim status');
-      }
-
-      fetchReports();
-      alert('Claim status updated successfully!');
+      fetchReports(); // Refresh the list
     } catch (err) {
-      alert('Error updating claim status: ' + err.message);
+      alert('Failed to update claim status: ' + (err.response?.data?.error || err.message));
     }
   };
 
   const deleteReport = async (reportId, itemName) => {
-    if (!window.confirm(`Are you sure you want to delete the report for "${itemName}"?`)) {
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/admin/reports/${reportId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete report');
+    if (window.confirm(`Are you sure you want to delete the report for "${itemName}"?`)) {
+      try {
+        const token = localStorage.getItem('token');
+        await axios.delete(`http://localhost:5000/api/admin/reports/${reportId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        alert('Report deleted successfully!');
+        fetchReports();
+      } catch (err) {
+        alert('Failed to delete report: ' + (err.response?.data?.error || err.message));
       }
-
-      fetchReports();
-      alert('Report deleted successfully!');
-    } catch (err) {
-      alert('Error deleting report: ' + err.message);
     }
   };
 
   const filteredReports = reports.filter(report => {
     if (filter === 'all') return true;
-    if (filter === 'lost' || filter === 'found') return report.reportType === filter;
-    if (filter === 'pending' || filter === 'approved') return report.claimStatus === filter;
-    return true;
+    return report.reportType === filter;
   });
 
-  const containerStyle = {
-    padding: '20px',
-    maxWidth: '1400px',
-    margin: '0 auto'
-  };
-
-  const filterStyle = {
-    display: 'flex',
-    gap: '10px',
-    marginBottom: '20px',
-    flexWrap: 'wrap'
-  };
-
-  const filterButtonStyle = {
-    padding: '8px 16px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '14px',
-    fontWeight: '500',
-    backgroundColor: '#fff'
-  };
-
-  const activeFilterStyle = {
-    ...filterButtonStyle,
-    backgroundColor: '#dc3545',
-    color: '#fff',
-    borderColor: '#dc3545'
-  };
-
-  const tableStyle = {
-    width: '100%',
-    borderCollapse: 'collapse',
-    backgroundColor: '#fff',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-    borderRadius: '8px',
-    overflow: 'hidden'
-  };
-
-  const thStyle = {
-    backgroundColor: '#dc3545',
-    color: '#fff',
-    padding: '12px',
-    textAlign: 'left',
-    fontWeight: '600',
-    fontSize: '14px'
-  };
-
-  const tdStyle = {
-    padding: '12px',
-    borderBottom: '1px solid #eee',
-    fontSize: '14px',
-    verticalAlign: 'top'
-  };
-
-  const buttonStyle = {
-    padding: '4px 8px',
-    margin: '2px',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '12px',
-    fontWeight: '500'
-  };
-
-  const dangerButtonStyle = {
-    ...buttonStyle,
-    backgroundColor: '#dc3545',
-    color: '#fff'
-  };
-
-  const selectStyle = {
-    padding: '4px 8px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '12px',
-    marginBottom: '4px'
-  };
-
-  const badgeStyle = {
-    padding: '4px 8px',
-    borderRadius: '12px',
-    fontSize: '12px',
-    fontWeight: '600',
-    textTransform: 'uppercase'
-  };
-
-  const getBadgeStyle = (type, value) => {
-    const baseStyle = { ...badgeStyle };
-    
-    if (type === 'reportType') {
-      return {
-        ...baseStyle,
-        backgroundColor: value === 'lost' ? '#ffc107' : '#17a2b8',
-        color: '#fff'
-      };
-    }
-    
-    if (type === 'claimStatus') {
-      switch (value) {
-        case 'none':
-          return { ...baseStyle, backgroundColor: '#6c757d', color: '#fff' };
-        case 'pending':
-          return { ...baseStyle, backgroundColor: '#ffc107', color: '#000' };
-        case 'approved':
-          return { ...baseStyle, backgroundColor: '#28a745', color: '#fff' };
-        default:
-          return { ...baseStyle, backgroundColor: '#6c757d', color: '#fff' };
-      }
-    }
-    
-    return baseStyle;
+  const styles = {
+    container: { padding: '40px 20px', maxWidth: '1200px', margin: '0 auto' },
+    title: { textAlign: 'center', marginBottom: '2rem' },
+    filterContainer: { textAlign: 'center', marginBottom: '1.5rem' },
+    filterButton: {
+      padding: '8px 16px',
+      margin: '0 5px',
+      borderRadius: '4px',
+      border: '1px solid #ccc',
+      backgroundColor: '#f8f9fa',
+      cursor: 'pointer',
+      transition: 'background-color 0.2s',
+    },
+    activeFilterButton: {
+      backgroundColor: '#3f892cff',
+      color: 'white',
+      borderColor: '#3f892cff',
+    },
+    table: { width: '100%', borderCollapse: 'collapse', marginTop: '20px' },
+    th: { border: '1px solid #ddd', padding: '12px', textAlign: 'left', backgroundColor: '#f2f2f2' },
+    td: { border: '1px solid #ddd', padding: '12px' },
+    select: { padding: '5px', borderRadius: '4px', border: '1px solid #ccc', marginRight: '10px' },
+    dangerButton: {
+      backgroundColor: '#dc3545',
+      color: 'white',
+      border: 'none',
+      padding: '8px 12px',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      fontSize: '14px',
+      marginLeft: '5px'
+    },
+    error: {
+      color: '#dc3545',
+      textAlign: 'center',
+      padding: '20px',
+      backgroundColor: '#f8d7da',
+      border: '1px solid #f5c6cb',
+      borderRadius: '8px',
+      marginTop: '20px'
+    },
+    similarityCell: {
+      fontSize: '12px',
+      color: '#6c757d'
+    },
+    claimedWithoutSearch: {
+      color: '#dc3545',
+      fontWeight: 'bold'
+    },
+    tableImage: {
+      width: '100px',
+      height: '100px',
+      objectFit: 'cover',
+      margin: '10px',
+    },
   };
 
   if (loading) {
-    return (
-      <div style={containerStyle}>
-        <h2>Admin - Reports Management</h2>
-        <p>Loading reports...</p>
-      </div>
-    );
+    return <div style={styles.container}><p style={{ textAlign: 'center' }}>Loading reports...</p></div>;
   }
 
   if (error) {
-    return (
-      <div style={containerStyle}>
-        <h2>Admin - Reports Management</h2>
-        <p style={{ color: '#dc3545' }}>Error: {error}</p>
-      </div>
-    );
+    return <div style={styles.container}><div style={styles.error}>{error}</div></div>;
   }
 
   return (
-    <div style={containerStyle}>
-      <h2 style={{ color: '#dc3545', marginBottom: '10px' }}>Admin - Reports Management</h2>
-      <p style={{ color: '#666', marginBottom: '20px' }}>
-        Total Reports: {reports.length} | Showing: {filteredReports.length}
-      </p>
-
-      <div style={filterStyle}>
+    <div style={styles.container}>
+      <h2 style={styles.title}>Admin - Manage Reports</h2>
+      <div style={styles.filterContainer}>
         <button
+          style={{ ...styles.filterButton, ...(filter === 'all' && styles.activeFilterButton) }}
           onClick={() => setFilter('all')}
-          style={filter === 'all' ? activeFilterStyle : filterButtonStyle}
         >
-          All Reports
+          All
         </button>
         <button
+          style={{ ...styles.filterButton, ...(filter === 'lost' && styles.activeFilterButton) }}
           onClick={() => setFilter('lost')}
-          style={filter === 'lost' ? activeFilterStyle : filterButtonStyle}
         >
           Lost Items
         </button>
         <button
+          style={{ ...styles.filterButton, ...(filter === 'found' && styles.activeFilterButton) }}
           onClick={() => setFilter('found')}
-          style={filter === 'found' ? activeFilterStyle : filterButtonStyle}
         >
           Found Items
         </button>
-        <button
-          onClick={() => setFilter('pending')}
-          style={filter === 'pending' ? activeFilterStyle : filterButtonStyle}
-        >
-          Pending Claims
-        </button>
-        <button
-          onClick={() => setFilter('approved')}
-          style={filter === 'approved' ? activeFilterStyle : filterButtonStyle}
-        >
-          Approved Claims
-        </button>
       </div>
 
-      <div style={{ overflowX: 'auto' }}>
-        <table style={tableStyle}>
+      {filteredReports.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+          No reports found matching the current filter.
+        </div>
+      ) : (
+        <table style={styles.table}>
           <thead>
             <tr>
-              <th style={thStyle}>Item</th>
-              <th style={thStyle}>Type</th>
-              <th style={thStyle}>Location</th>
-              <th style={thStyle}>Date</th>
-              <th style={thStyle}>Posted By</th>
-              <th style={thStyle}>Contact</th>
-              <th style={thStyle}>Claim Status</th>
-              <th style={thStyle}>Claimed By</th>
-              <th style={thStyle}>Description</th>
-              <th style={thStyle}>Actions</th>
+              <th style={styles.th}>Item</th>
+              <th style={styles.th}>Item Name</th>
+              <th style={styles.th}>Type</th>
+              <th style={styles.th}>Posted By</th>
+              <th style={styles.th}>Claim Status</th>
+              <th style={styles.th}>Claim By</th>
+              <th style={styles.th}>Similarity</th>
+              <th style={styles.th}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {filteredReports.map(report => (
               <tr key={report._id}>
-                <td style={tdStyle}>
-                  <strong>{report.itemName}</strong>
+                <td style={{...styles.td, ...styles.tableImage}}>
+                    {report.image && (
+                      <img
+                        src={`http://localhost:5000/uploads/${report.image}`}
+                        alt={report.itemName}
+                        style={{ width: '100px', height: '100px', objectFit: 'cover' }}
+                      />
+                    )}
                 </td>
-                <td style={tdStyle}>
-                  <span style={getBadgeStyle('reportType', report.reportType)}>
-                    {report.reportType}
-                  </span>
-                </td>
-                <td style={tdStyle}>{report.location}</td>
-                <td style={tdStyle}>
-                  {new Date(report.date).toLocaleDateString()}
-                </td>
-                <td style={tdStyle}>
-                  <div>
-                    <strong>{report.postedBy?.name || 'Unknown'}</strong>
-                    <br />
-                    <small style={{ color: '#666' }}>
-                      {report.postedBy?.email || 'N/A'}
-                    </small>
-                  </div>
-                </td>
-                <td style={tdStyle}>{report.contact}</td>
-                <td style={tdStyle}>
-                  <span style={getBadgeStyle('claimStatus', report.claimStatus)}>
-                    {report.claimStatus}
-                  </span>
-                </td>
-                <td style={tdStyle}>
-                  {report.claimBy ? (
-                    <div>
-                      <strong>{report.claimBy.name}</strong>
-                      <br />
-                      <small style={{ color: '#666' }}>
-                        {report.claimBy.email}
-                      </small>
-                    </div>
+                <td style={styles.td}>{report.itemName}</td>
+                <td style={styles.td}>{report.reportType}</td>
+                <td style={styles.td}>{report.postedBy?.name || 'N/A'}</td>
+                <td style={styles.td}>{report.claimStatus}</td>
+                <td style={styles.td}>{report.claimBy?.name || 'N/A'}</td>
+                <td style={styles.td}>
+                  {report.reportType === 'found' && report.claimStatus !== 'none' && typeof report.claimScore === 'number' ? (
+                    `${report.claimScore.toFixed(2)}%`
                   ) : (
-                    <span style={{ color: '#999' }}>No claims</span>
+                    <span style={styles.similarityCell}>
+                      {report.reportType === 'found' && report.claimStatus !== 'none' ? 'N/A (Claimed without search)' : '—'}
+                    </span>
                   )}
                 </td>
-                <td style={{ ...tdStyle, maxWidth: '200px' }}>
-                  <div style={{ 
-                    overflow: 'hidden', 
-                    textOverflow: 'ellipsis',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 3,
-                    WebkitBoxOrient: 'vertical'
-                  }}>
-                    {report.description}
-                  </div>
-                </td>
-                <td style={tdStyle}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    {/* Conditional rendering for claim status select */}
-                    {report.reportType === 'found' && report.claimBy ? (
+                <td style={styles.td}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    {report.reportType === 'found' ? (
                       <select
                         value={report.claimStatus}
                         onChange={(e) => updateClaimStatus(report._id, e.target.value)}
-                        style={selectStyle}
+                        style={styles.select}
                       >
-                        <option value="none">No Claims</option>
+                        <option value="none">None</option>
                         <option value="pending">Pending</option>
                         <option value="approved">Approved</option>
                       </select>
-                    ) : (report.reportType === 'lost' || !report.claimBy) && (
-                      <span style={{ color: '#999', fontSize: '12px' }}>N/A</span>
+                    ) : (
+                      <select
+                        value={report.claimStatus}
+                        onChange={(e) => updateClaimStatus(report._id, e.target.value)}
+                        style={styles.select}
+                      >
+                        <option value="not-found-yet">Not Found Yet</option>
+                        <option value="has-been-found">Has Been Found</option>
+                      </select>
                     )}
                     <button
                       onClick={() => deleteReport(report._id, report.itemName)}
-                      style={dangerButtonStyle}
+                      style={styles.dangerButton}
                     >
                       Delete
                     </button>
@@ -359,19 +242,6 @@ function AdminReports() {
             ))}
           </tbody>
         </table>
-      </div>
-
-      {filteredReports.length === 0 && (
-        <div style={{ 
-          textAlign: 'center', 
-          padding: '40px', 
-          color: '#666',
-          backgroundColor: '#f8f9fa',
-          borderRadius: '8px',
-          marginTop: '20px'
-        }}>
-          <p>No reports found matching the current filter.</p>
-        </div>
       )}
     </div>
   );

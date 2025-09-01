@@ -46,11 +46,11 @@ function Register() {
         confirmPassword: '',
         contact: ''
       });
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
+      setTimeout(() => navigate('/login'), 2000);
     } catch (err) {
-      setMessage(err.response?.data?.error || 'Registration failed');
+      const errorMsg = err.response?.data?.error || 'Registration failed';
+      setMessage(errorMsg);
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -60,14 +60,15 @@ function Register() {
     container: {
       padding: '40px 20px',
       maxWidth: '400px',
-      margin: '0 auto',
+      margin: '40px auto',
       backgroundColor: '#f9f9f9',
       borderRadius: '8px',
-      boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
+      boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+      fontFamily: 'Arial, sans-serif'
     },
     title: {
       textAlign: 'center',
-      marginBottom: '30px',
+      marginBottom: '20px',
       color: '#333'
     },
     form: {
@@ -77,24 +78,38 @@ function Register() {
     },
     input: {
       padding: '12px',
-      border: '1px solid #ddd',
+      fontSize: '16px',
       borderRadius: '4px',
-      fontSize: '16px'
+      border: '1px solid #ccc',
+      width: '100%',
+      boxSizing: 'border-box'
     },
     button: {
-      padding: '12px',
-      backgroundColor: '#28a745',
-      color: 'white',
+      padding: '12px 20px',
+      fontSize: '16px',
+      fontWeight: 'bold',
+      color: '#fff',
+      backgroundColor: '#000000ff',
       border: 'none',
       borderRadius: '4px',
-      fontSize: '16px',
-      cursor: 'pointer'
+      cursor: 'pointer',
+      transition: 'background-color 0.2s ease',
     },
     message: {
       textAlign: 'center',
       padding: '10px',
       borderRadius: '4px',
       marginBottom: '15px'
+    },
+    error: {
+      backgroundColor: '#f8d7da',
+      color: '#b9313fff',
+      border: '1px solid #f5c6cb'
+    },
+    success: {
+      backgroundColor: '#d4edda',
+      color: '#155724',
+      border: '1px solid #c3e6cb'
     },
     link: {
       textAlign: 'center',
@@ -107,11 +122,7 @@ function Register() {
       <h2 style={styles.title}>Register for Bhetiyo</h2>
       
       {message && (
-        <div style={{
-          ...styles.message,
-          backgroundColor: message.includes('successful') ? '#d4edda' : '#f8d7da',
-          color: message.includes('successful') ? '#155724' : '#721c24'
-        }}>
+        <div style={message.includes('successful') ? {...styles.message, ...styles.success} : {...styles.message, ...styles.error}}>
           {message}
         </div>
       )}

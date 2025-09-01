@@ -12,8 +12,8 @@ import AdminUsers from './pages/AdminUsers';
 import AdminReports from './pages/AdminReports';
 import Login from './Register/Login';
 import Register from './Register/Register';
-import LostItemMatches from './pages/LostItemMatches'; 
-import SearchItems from './pages/SearchItems'; // New import
+import SearchItems from './pages/SearchItems';
+import './App.css';
 
 function App() {
   return (
@@ -28,12 +28,10 @@ function App() {
           <Route path="/reportFound" element={<ReportFound />} />
           <Route path="/myReports" element={<MyReports />} />
           <Route path="/admin/users" element={<AdminUsers />} />
-          <Route path="/admin/reports" element={<AdminReports />} /> 
+          <Route path="/admin/reports" element={<AdminReports />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          {/* Route for displaying matches for a specific lost item */}
-          <Route path="/lostItems/:lostReportId/matches" element={<LostItemMatches />} />
-          <Route path="/search" element={<SearchItems />} /> {/* New route for search functionality */}
+          <Route path="/search" element={<SearchItems />} />
           <Route path="*" element={<Home />} />
         </Routes>
       </main>

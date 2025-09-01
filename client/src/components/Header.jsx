@@ -1,7 +1,12 @@
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import logo from "../assets/logo.png";
+import './Header.css';
 
 function Header() {
+  const [isItemsDropdownOpen, setIsItemsDropdownOpen] = useState(false);
+  const [isReportingDropdownOpen, setIsReportingDropdownOpen] = useState(false);
+  const [isAdminDropdownOpen, setIsAdminDropdownOpen] = useState(false);
+  
   const isLoggedIn = localStorage.getItem('token');
   const role = isLoggedIn ? JSON.parse(atob(isLoggedIn.split('.')[1])).role : null;
 
@@ -10,55 +15,76 @@ function Header() {
     window.location.href = '/';
   };
 
-  const linkStyle = {
-    margin: '0 10px',
-    color: '#333',
-    textDecoration: 'none',
-    fontSize: '16px',
-    fontWeight: '600',
-    padding: '5px 8px',
-    borderRadius: '4px',
-    transition: 'background-color 0.2s ease',
+  const closeAllDropdowns = () => {
+    setIsItemsDropdownOpen(false);
+    setIsReportingDropdownOpen(false);
+    setIsAdminDropdownOpen(false);
   };
 
-  const logoutButtonStyle = {
-    ...linkStyle,
-    backgroundColor: '#dc3545',
-    color: '#fff',
-    border: 'none',
-    cursor: 'pointer'
+  const toggleDropdown = (setter) => (e) => {
+    e.preventDefault();
+    setter(prev => !prev);
   };
 
   return (
-    <header style={{ padding: '10px 20px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <img src={logo} style={{ height: 50, width: 50 }} alt="logo" />
-        <h1 style={{ color: '#dc3545' }}>Bhetiyo</h1>
+    <header className="header">
+      <div className="header-logo">
+        <img src="http://localhost:5000/uploads/logo.png" alt="logo" />
+        <h1 className="header-title">Bhetiyo</h1>
       </div>
 
-      <nav style={{ marginTop: '20px', marginBottom: '20px' }}>
-        <Link to="/" style={linkStyle}>Home</Link>
-        <Link to="/lostItems" style={linkStyle}>Lost Items</Link>
-        <Link to="/foundItems" style={linkStyle}>Found Items</Link>
-        <Link to="/search" style={linkStyle}>Search Items</Link> {/* New link for search */}
+      <nav className="header-nav">
+        <Link to="/" className="nav-link" onClick={closeAllDropdowns}>Home</Link>
+        
+        <div 
+          className="dropdown"
+          onMouseEnter={() => setIsItemsDropdownOpen(true)}
+          onMouseLeave={() => setIsItemsDropdownOpen(false)}
+        >
+          <Link to="#" className="nav-link">Items</Link>
+          <div className="dropdown-content" style={{ display: isItemsDropdownOpen ? 'block' : 'none' }}>
+            <Link to="/lostItems" onClick={closeAllDropdowns}>Lost Items</Link>
+            <Link to="/foundItems" onClick={closeAllDropdowns}>Found Items</Link>
+          </div>
+        </div>
+
+        <Link to="/search" className="nav-link" onClick={closeAllDropdowns}>Search Items</Link>
+
         {isLoggedIn && (
           <>
-            <Link to="/reportLost" style={linkStyle}>Report Lost</Link>
-            <Link to="/reportFound" style={linkStyle}>Report Found</Link>
-            <Link to="/myReports" style={linkStyle}>My Reports</Link>
+            <div 
+              className="dropdown"
+              onMouseEnter={() => setIsReportingDropdownOpen(true)}
+              onMouseLeave={() => setIsReportingDropdownOpen(false)}
+            >
+              <Link to="#" className="nav-link">Report</Link>
+              <div className="dropdown-content" style={{ display: isReportingDropdownOpen ? 'block' : 'none' }}>
+                <Link to="/reportLost" onClick={closeAllDropdowns}>Report Lost</Link>
+                <Link to="/reportFound" onClick={closeAllDropdowns}>Report Found</Link>
+              </div>
+            </div>
+            <Link to="/myReports" className="nav-link" onClick={closeAllDropdowns}>My Reports</Link>
             {role === 'admin' && (
-              <>
-                <Link to="/admin/users" style={linkStyle}>Admin Users</Link>
-                <Link to="/admin/reports" style={linkStyle}>Admin Reports</Link>
-              </>
+              <div 
+                className="dropdown"
+                onMouseEnter={() => setIsAdminDropdownOpen(true)}
+                onMouseLeave={() => setIsAdminDropdownOpen(false)}
+              >
+                <Link to="#" className="nav-link">Admin</Link>
+                <div className="dropdown-content" style={{ display: isAdminDropdownOpen ? 'block' : 'none' }}>
+                  <Link to="/admin/users" onClick={closeAllDropdowns}>Admin Users</Link>
+                  <Link to="/admin/reports" onClick={closeAllDropdowns}>Admin Reports</Link>
+                </div>
+              </div>
             )}
-            <button onClick={logout} style={logoutButtonStyle}>Logout</button>
+            <button onClick={logout} className="btn-logout">Logout</button>
           </>
         )}
+        
         {!isLoggedIn && (
           <>
-            <Link to="/login" style={linkStyle}>Login</Link>
-            <Link to="/register" style={linkStyle}>Register</Link>
+            <Link to="/login" className="nav-link" onClick={closeAllDropdowns}>Login</Link>
+            <Link to="/register" className="nav-link" onClick={closeAllDropdowns}>Register</Link>
           </>
         )}
       </nav>

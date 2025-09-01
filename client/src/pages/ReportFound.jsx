@@ -2,6 +2,61 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
+const styles = {
+  container: {
+    padding: '40px 20px',
+    maxWidth: '600px',
+    margin: '40px auto',
+    backgroundColor: '#f9f9f9',
+    borderRadius: '8px',
+    boxShadow: '0 0 10px rgba(0,0,0,0.1)',
+  },
+  title: {
+    textAlign: 'center',
+    marginBottom: '20px',
+    color: '#343a40',
+  },
+  message: {
+    textAlign: 'center',
+    padding: '10px',
+    borderRadius: '4px',
+    marginBottom: '15px'
+  },
+  form: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '15px',
+  },
+  input: {
+    padding: '10px',
+    borderRadius: '4px',
+    border: '1px solid #ccc',
+    fontSize: '16px',
+  },
+  textarea: {
+    padding: '10px',
+    borderRadius: '4px',
+    border: '1px solid #ccc',
+    fontSize: '16px',
+    minHeight: '100px',
+    resize: 'vertical',
+  },
+  button: {
+    padding: '12px',
+    backgroundColor: '#3f892cff',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '16px',
+    fontWeight: 'bold',
+    transition: 'background-color 0.2s',
+  },
+  buttonHover: {
+    backgroundColor: '#0056b3',
+  },
+};
+
 function ReportFound() {
   const [form, setForm] = useState({
     itemName: '',
@@ -10,6 +65,7 @@ function ReportFound() {
     date: '',
     description: '',
   });
+  const [imageFile, setImageFile] = useState(null);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -18,14 +74,15 @@ function ReportFound() {
     const token = localStorage.getItem('token');
     if (!token) {
       navigate('/login');
-      return;
     }
-
-    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
   }, [navigate]);
 
   function handleChange(e) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  }
+
+  function handleFileChange(e) {
+    setImageFile(e.target.files[0]);
   }
 
   async function handleSubmit(e) {
@@ -33,85 +90,38 @@ function ReportFound() {
     setLoading(true);
     setMessage('');
 
+    const token = localStorage.getItem('token');
+
+    const formData = new FormData();
+    for (const key in form) {
+      formData.append(key, form[key]);
+    }
+    formData.append('reportType', 'found');
+    if (imageFile) {
+      formData.append('image', imageFile);
+    }
+
     try {
-      const token = localStorage.getItem('token');
-      await axios.post('/api/reports', {
-        ...form,
-        reportType: 'found',
-      }, {
+      await axios.post('http://localhost:5000/api/reports', formData, {
         headers: {
+          'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${token}`
-        }
+        },
       });
       setMessage('Found item report submitted successfully!');
       setForm({ itemName: '', location: '', contact: '', date: '', description: '' });
+      setImageFile(null);
     } catch (err) {
-      if (err.response?.status === 401) {
-        setMessage('Please log in to submit a report.');
-        setTimeout(() => navigate('/login'), 2000);
-      } else {
-        setMessage(err.response?.data?.error || 'Failed to submit report.');
-      }
-      console.error(err);
+      setMessage(err.response?.data?.error || 'Failed to submit report. Please try again.');
     } finally {
       setLoading(false);
     }
   }
 
-  const styles = {
-    container: {
-      padding: '40px 20px',
-      maxWidth: '600px',
-      margin: '0 auto',
-      backgroundColor: '#f9f9f9',
-      borderRadius: '8px',
-      boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
-    },
-    title: {
-      textAlign: 'center',
-      marginBottom: '30px',
-      color: '#333'
-    },
-    form: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '15px'
-    },
-    input: {
-      padding: '12px',
-      border: '1px solid #ddd',
-      borderRadius: '4px',
-      fontSize: '16px'
-    },
-    textarea: {
-      padding: '12px',
-      border: '1px solid #ddd',
-      borderRadius: '4px',
-      fontSize: '16px',
-      minHeight: '100px',
-      resize: 'vertical'
-    },
-    button: {
-      padding: '12px',
-      backgroundColor: '#28a745',
-      color: 'white',
-      border: 'none',
-      borderRadius: '4px',
-      fontSize: '16px',
-      cursor: 'pointer'
-    },
-    message: {
-      textAlign: 'center',
-      padding: '10px',
-      borderRadius: '4px',
-      marginBottom: '15px'
-    }
-  };
-
   return (
     <div style={styles.container}>
-      <h2 style={styles.title}>Report Found Item</h2>
-      
+      <h2 style={styles.title}>Report a Found Item</h2>
+
       {message && (
         <div style={{
           ...styles.message,
@@ -166,8 +176,15 @@ function ReportFound() {
           style={styles.textarea}
           required
         />
-        <button 
-          type="submit" 
+        <input
+          type="file"
+          name="image"
+          onChange={handleFileChange}
+          style={styles.input}
+          accept="image/*"
+        />
+        <button
+          type="submit"
           style={styles.button}
           disabled={loading}
         >

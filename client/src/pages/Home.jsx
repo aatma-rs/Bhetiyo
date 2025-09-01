@@ -1,18 +1,13 @@
-import Card, { CardsContainer } from "../Card.jsx";
-import Box from "../Box/Box.jsx";
+import { CardsContainer } from "../Card.jsx";
+import './Home.css';
 
 function Home() {
   return (
-    <>
-        <h2>&nbsp;&nbsp;&nbsp;&nbsp;Welcome to Bhetiyo Website</h2>
-        <Box />
-        <h2>&nbsp;&nbsp;&nbsp;&nbsp;All Items:</h2>
-        <div className="cards-container">
-          <CardsContainer/>
-        </div>
-        
-    </>
+    <div className="home-container">
+      <h2 className="all-items-title">All Items:</h2>
+      <CardsContainer />
+    </div>
   );
 }
 
-export default Home;
+export default Home;  

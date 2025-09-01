@@ -1,0 +1,165 @@
+.cards-container {
+  max-width: 100%;
+  margin: 0 90px;
+  padding: 30px 0;
+  background-color: #f5f5f5;
+  min-height: auto;
+  color: #333333;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(1, minmax(420px, 1fr));
+  gap: 3.5rem;
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.card {
+  background-color: #ffffff; 
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease-in-out;
+  min-height: 450px;
+  width: 500px;
+  border: 1px solid #e0e0e0;
+}
+
+.card:hover {
+  transform: scale(1.01);
+}
+
+.card-image {
+  width: 100%;
+  height: 350px;
+  object-fit: contain;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.card-body {
+  padding: 0px 20px;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  box-shadow: '0 0 10px rgba(0,0,0,0.1)',
+}
+
+.card-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #333333;
+  margin-bottom: 10px;
+  line-height: 1.4;
+  opacity: 1;
+}
+
+.description-text {
+  font-size: 0.875rem;
+  color: #888888;
+  line-height: 1.6;
+  text-align: justify; 
+  margin-bottom: 20px;
+  max-height: 80px; 
+  overflow-y: auto;
+}
+
+.report-label {
+  font-weight: 700;
+}
+
+.card-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  color: #888888;
+  margin-bottom: 8px;
+}
+
+.card-info-row strong {
+  color: #333333;
+  font-weight: 600;
+}
+
+.badge {
+  padding: 4px 10px;
+  text-transform: uppercase;
+}
+
+.badge-lost {
+  background-color: #b9313fff;
+  color: #ffffff;
+  border-radius: 9999px;
+  margin-left: 5px;
+}
+
+.badge-found {
+  background-color: #3f892cff;
+  color: #ffffff;
+  border-radius: 9999px;
+  margin-left: 5px;
+}
+
+.badge-status-not-found-yet {
+  background-color: #000000; 
+  color: #ffffff;
+  border-radius: 9999px; 
+  margin-left: 5px; 
+}
+
+.badge-status-has-been-found {
+  background-color: #349565; 
+  color: #ffffff;
+  border-radius: 9999px; 
+  margin-left: 5px; 
+}
+
+.badge-status-none {
+  background-color: #656161;
+  color: #ffffff;
+  border-radius: 9999px;
+  margin-left: 5px;
+}
+
+.badge-status-pending {
+  background-color: #ffd900;
+  color: #000000;
+  border-radius: 9999px;
+  margin-left: 5px;
+}
+
+.badge-status-approved {
+  background-color: #3f892cff;
+  color: #ffffff;
+  border-radius: 9999px;
+  margin-left: 5px;
+}
+
+.card .btn {
+  margin-top: auto;
+  margin-bottom: 30px;
+  width: 100%;
+  padding: 12px;  
+  background-color: #3f892cff;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.card .btn:hover {
+  background-color: #6b6a6a;
+}
+
+p {
+  padding: 0px;
+  margin: 4px;
+}
